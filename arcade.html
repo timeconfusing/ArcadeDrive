@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+  background-color: Gainsboro;
+}
+</style>
+</head>
+<body>
+
+<script type="text/javascript"> 
+    document.write("<h1>Arcade Drive Equations</h1>"); 
+    document.write("These equations are for Left Drive is normal and Right Drive  is reversed <br>"); 
+    document.write("mSpeed is the forward vector component due to Speed <br>"); 
+    document.write("mYaw is the Left (and -Right) forward vector component due to Yaw <br>"); 
+    document.write("mSpeed = Speed - (Speed*ABS(Yaw)/127)/2 <br>"); 
+    document.write("mYaw = Yaw - (Yaw*ABS(Speed)/127)/2 <br>"); 
+    document.write("L = mSpeed + mYaw <br>"); 
+    document.write("R = mSpeed - mYaw <br>"); 
+</script> 
+
+<script type="text/javascript"> 
+function mSpeed(Speed, Yaw, Range) {
+  return Speed - (Math.round(Speed*Math.abs(Yaw)/Range)/2);
+}
+
+function mYaw(Speed, Yaw, Range) {
+  return Yaw - (Math.round(Yaw*Math.abs(Speed)/Range)/2);
+}
+
+function leftDrive(Speed, Yaw, Range) {
+  return mSpeed(Speed,Yaw,Range) + mYaw(Speed,Yaw,Range);
+}
+
+function rightDrive(Speed, Yaw, Range) {
+  return mSpeed(Speed,Yaw,Range) - mYaw(Speed,Yaw,Range);
+}
+
+function tableCreate(){
+
+  var yRange = new Array(null,-127,-112,-96,-80,-64,-48,-32,-16,0, 16, 32, 48, 64, 80, 96, 112, 127);  // cols
+  var sRange = new Array(null, 127, 112, 96, 80, 64, 48, 32, 16,0,-16,-32,-48,-64,-80,-96,-112,-127);  // rows
+  var msArray = new Array();
+  var myArray = new Array();
+  var lArray = new Array();
+  var rArray = new Array();
+
+  for (var i=0; i <= yRange.length-1; i++) {  // row
+    msArray[i] = new Array();
+    myArray[i] = new Array();
+    lArray[i] = new Array();
+    rArray[i] = new Array();
+    for (var j=0; j <= sRange.length-1; j++) {  // col
+      if (i==0) {
+        msArray[i][j] = yRange[j];
+        myArray[i][j] = yRange[j];
+        lArray[i][j] = yRange[j];
+        rArray[i][j] = yRange[j];
+      } else if (j==0) {
+        msArray[i][j] = sRange[i];
+        myArray[i][j] = sRange[i];
+        lArray[i][j] = sRange[i];
+        rArray[i][j] = sRange[i];
+      } else {
+        msArray[i][j] = mSpeed(sRange[i],yRange[j],sRange[1]);
+        myArray[i][j] = mYaw(sRange[i],yRange[j],sRange[1]);
+        lArray[i][j] = leftDrive(sRange[i],yRange[j],sRange[1]);
+        rArray[i][j] = rightDrive(sRange[i],yRange[j],sRange[1]);
+      } //if
+    } //forj
+  } //fori
+
+  var body = document.body,
+      mstbl = document.createElement('table'),
+      mytbl = document.createElement('table'),
+      ltbl  = document.createElement('table'),
+      rtbl  = document.createElement('table'),
+      lrtbl = document.createElement('table');
+  mstbl.style.width  = '100%';
+  mstbl.style.border = '1px solid black';
+  mytbl.style.width  = '100%';
+  mytbl.style.border = '1px solid black';
+  ltbl.style.width  = '100%';
+  ltbl.style.border = '1px solid black';
+  rtbl.style.width  = '100%';
+  rtbl.style.border = '1px solid black';
+  lrtbl.style.width  = '100%';
+  lrtbl.style.border = '1px solid black';
+  for(var i = 0; i <= yRange.length-1; i++) {
+    var mstr = mstbl.insertRow();
+    var mytr = mytbl.insertRow();
+    var ltr = ltbl.insertRow();
+    var rtr = rtbl.insertRow();
+    var lrtr = lrtbl.insertRow();
+    for(var j = 0; j <= sRange.length-1; j++){
+      var mstd = mstr.insertCell();
+      var mytd = mytr.insertCell();
+      var ltd = ltr.insertCell();
+      var rtd = rtr.insertCell();
+      var lrtd = lrtr.insertCell();
+
+      mstd.style.textAlign = "center"; 
+      mytd.style.textAlign = "center"; 
+      ltd.style.textAlign = "center"; 
+      rtd.style.textAlign = "center"; 
+      lrtd.style.textAlign = "center"; 
+
+      mstd.appendChild(document.createTextNode(msArray[i][j]));
+      mytd.appendChild(document.createTextNode(myArray[i][j]));
+      ltd.appendChild(document.createTextNode(lArray[i][j]));
+      rtd.appendChild(document.createTextNode(rArray[i][j]));
+      if (i==0) {
+        lrtd.appendChild(document.createTextNode(lArray[i][j]));
+        lrtd.style.border = '2px solid black';
+        mstd.style.border = '2px solid black';
+        mytd.style.border = '2px solid black';
+        ltd.style.border = '2px solid black';
+        rtd.style.border = '2px solid black';
+      } else if (j==0) {
+        lrtd.appendChild(document.createTextNode(lArray[i][j]));
+        lrtd.style.border = '2px solid black';
+        mstd.style.border = '2px solid black';
+        mytd.style.border = '2px solid black';
+        ltd.style.border = '2px solid black';
+        rtd.style.border = '2px solid black';
+      } else {
+       lrtd.appendChild(document.createTextNode("(" + lArray[i][j] + ", " + rArray[i][j] + ")"));
+       lrtd.style.border = '1px solid black';
+        mstd.style.border = '1px solid black';
+        mytd.style.border = '1px solid black';
+        ltd.style.border = '1px solid black';
+        rtd.style.border = '1px solid black';
+      }
+    }
+  }
+  document.write("<br>" + "mSpeed Values" + "<br>"); 
+  body.appendChild(mstbl);
+  document.write("<br>" + "mYaw Values" + "<br>"); 
+  body.appendChild(mytbl);
+  document.write("<br>" + "Left Drive Values" + "<br>"); 
+  body.appendChild(ltbl);
+  document.write("<br>" + "Right Drive Values" + "<br>"); 
+  body.appendChild(rtbl);
+  document.write("<br>" + "(L,R) Drive Values" + "<br>"); 
+  body.appendChild(lrtbl);
+}
+
+tableCreate();
+</script> 

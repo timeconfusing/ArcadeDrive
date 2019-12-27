@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+  background-color: Gainsboro;
+}
+.slidecontainer {
+  width: 100%;
+}
+
+.slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 25px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.slider:hover {
+  opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<h1>Arcade X-Drive Equations </h1>
+<p>These equations are for Left Drive is normal and Right Drive is reversed<br>
+mVSpeed is the vertial vector component due to left y-axis Speed <br>
+mHSpeed is the horizontal vector component due to left x-axis Speed <br>
+mYaw is the Left (and -Right) forward vector component due to right x-axis Yaw <br>
+Where 127 is the input range magnitude and the motor range magnitude </p>
+<p>m1VSpeed = VSpeed   - (VSpeed*ABS(HSpeed)/127)/2<br>
+mVSpeed  = m1VSpeed - (m1VSpeed*ABS(Yaw)/127)/2</p>
+<p>m1HSpeed = HSpeed   - (HSpeed*ABS(VSpeed)/127)/2<br>
+mHSpeed  = m1HSpeed - (m1HSpeed*ABS(Yaw)/127)/2</p>
+<p>m1Yaw    = Yaw      - (Yaw*ABS(VSpeed)/127)/2 <br>
+mYaw     = m1Yaw    - (m1Yaw*ABS(HSpeed)/127)/2</p>
+<p>LF = mVSpeed + mHSpeed + mYaw</p>
+<p>LR = mVSpeed - mHSpeed + mYaw</p>
+<p>RF = mVSpeed - mHspeed - mYaw</p>
+<p>RR = mVSpeed + mHSpeed - mYaw</p>
+
+
+<div id="myTable">
+  <h1>mVertical Values</h1>
+  <div id=vTBL></div>
+  <h1>mHorizontal Values</h1>
+  <div id=hTBL></div>
+  <h1>LF | RF Drive Values<br>LR | RR</h1>
+  <div>
+    <h1>Yaw Range Slider</h1>
+    <p>Drag the slider set the current value of Yaw.</p>
+    <div class="slidecontainer">
+      <input type="range" min="-127" max="127" value="0" class="slider" id="yawRange" oninput="yawFunction()">
+      <p id="yaw"></p>
+    </div>
+  </div>
+  <div id=xTBL></div>
+</div>
+
+<script type="text/javascript"> 
+
+var yawValue = document.getElementById("yawRange").value;
+document.getElementById("yaw").innerHTML = "Yaw: " + yawValue;
+
+function mRatio(v1, v2, v3, Range) {
+  var m = v1 - (Math.round(v1*Math.abs(v2)/Range)/2);
+  return m - (Math.round(m*Math.abs(v3)/Range)/2);
+}
+
+function leftFront(VSpeed, HSpeed, Yaw, Range) {
+  return Math.round(mRatio(VSpeed,HSpeed,Yaw,Range) + mRatio(HSpeed,VSpeed,Yaw,Range) + mRatio(Yaw,VSpeed,HSpeed,Range));
+}
+
+function leftRear(VSpeed, HSpeed, Yaw, Range) {
+  return Math.round(mRatio(VSpeed,HSpeed,Yaw,Range) - mRatio(HSpeed,VSpeed,Yaw,Range) + mRatio(Yaw,VSpeed,HSpeed,Range));
+}
+
+function rightFront(VSpeed, HSpeed, Yaw, Range) {
+  return Math.round(mRatio(VSpeed,HSpeed,Yaw,Range) - mRatio(HSpeed,VSpeed,Yaw,Range) - mRatio(Yaw,VSpeed,HSpeed,Range));
+}
+
+function rightRear(VSpeed, HSpeed, Yaw, Range) {
+  return Math.round(mRatio(VSpeed,HSpeed,Yaw,Range) + mRatio(HSpeed,VSpeed,Yaw,Range) - mRatio(Yaw,VSpeed,HSpeed,Range));
+}
+
+function tableCreate(){
+  // create arrays with motor values
+  // this could be more efficient if the v&h arrays were only calculated once and not every time the yaw slider changes
+  var hRange = new Array(null,-127,-112,-96,-80,-64,-48,-32,-16,0, 16, 32, 48, 64, 80, 96, 112, 127);  // cols
+  var vRange = new Array(null, 127, 112, 96, 80, 64, 48, 32, 16,0,-16,-32,-48,-64,-80,-96,-112,-127);  // rows
+  var hArray = new Array();
+  var vArray = new Array();
+  var lfArray = new Array();
+  var lrArray = new Array();
+  var rfArray = new Array();
+  var rrArray = new Array();
+
+  for (var i=0; i <= hRange.length-1; i++) {  // row
+    hArray[i] = new Array();
+    vArray[i] = new Array();
+    lfArray[i] = new Array();
+    lrArray[i] = new Array();
+    rfArray[i] = new Array();
+    rrArray[i] = new Array();
+    for (var j=0; j <= vRange.length-1; j++) {  // col
+      if (i==0) {
+        hArray[i][j]  = hRange[j];
+        vArray[i][j]  = hRange[j];
+        lfArray[i][j] = hRange[j];
+        lrArray[i][j] = hRange[j];
+        rfArray[i][j] = hRange[j];
+        rrArray[i][j] = hRange[j];
+      } else if (j==0) {
+        hArray[i][j]  = vRange[i];
+        vArray[i][j]  = vRange[i];
+        lfArray[i][j] = vRange[i];
+        lrArray[i][j] = vRange[i];
+        rfArray[i][j] = vRange[i];
+        rrArray[i][j] = vRange[i];
+      } else {
+        hArray[i][j]  = mRatio( hRange[j],vRange[i],0,vRange[1]);
+        vArray[i][j]  = mRatio( vRange[i],hRange[j],0,vRange[1]);
+        lfArray[i][j] = leftFront(  vRange[i],hRange[j],yawValue,vRange[1]);
+        lrArray[i][j] = leftRear(   vRange[i],hRange[j],yawValue,vRange[1]);
+        rfArray[i][j] = rightFront( vRange[i],hRange[j],yawValue,vRange[1]);
+        rrArray[i][j] = rightRear(  vRange[i],hRange[j],yawValue,vRange[1]);
+      } //if
+    } //forj
+  } //fori
+
+//  var bwid = document.body.clientWidth();
+//  var cwid = bwid/hRange.length;
+  
+  // this could be more efficient if the v&h tables were only generated once and not every time the yaw slider changes
+  vtbl = create_tbl_elem("VTBL");
+  htbl = create_tbl_elem("HTBL");
+  xtbl = create_tbl_elem("XTBL");
+
+  for(var i = 0; i <= hRange.length-1; i++) {
+    var vtr = vtbl.insertRow();
+    var htr = htbl.insertRow();
+    var xtr = xtbl.insertRow();
+    for(var j = 0; j <= vRange.length-1; j++){
+      var vtd = vtr.insertCell();
+      vtd.style.textAlign = "center"; 
+      var htd = htr.insertCell();
+      htd.style.textAlign = "center"; 
+      var xtd = xtr.insertCell();
+      xtd.style.textAlign = "center"; 
+      vtd.appendChild(document.createTextNode(vArray[i][j]));
+      htd.appendChild(document.createTextNode(hArray[i][j]));
+      vtd.style.border = '2px solid black';
+      htd.style.border = '2px solid black';
+      xtd.style.border = '2px solid black';
+      if (i==0) {
+        xtd.appendChild(document.createTextNode(vArray[i][j]));
+      } else if (j==0) {
+        xtd.appendChild(document.createTextNode(hArray[i][j]));
+      } else {
+        // inner 2x2 table
+        var itbl = document.createElement('table');
+        var itr = itbl.insertRow();
+        var itd = itr.insertCell();
+        itd.style.textAlign = "right"; 
+        itd.appendChild(document.createTextNode( lfArray[i][j] ));
+        itd = itr.insertCell();
+        itd.style.textAlign = "right"; 
+        itd.appendChild(document.createTextNode( rfArray[i][j] ));
+        itr = itbl.insertRow();
+        itd = itr.insertCell();
+        itd.style.textAlign = "right"; 
+        itd.appendChild(document.createTextNode( lrArray[i][j] ));
+        itd = itr.insertCell();
+        itd.style.textAlign = "right"; 
+        itd.appendChild(document.createTextNode( rrArray[i][j] ));
+        xtd.appendChild(itbl);
+
+        vtd.style.border = '1px solid black';
+        htd.style.border = '1px solid black';
+        xtd.style.border = '1px solid black';
+      }
+    }
+  }
+
+  document.getElementById("vTBL").appendChild(vtbl);
+  document.getElementById("hTBL").appendChild(htbl);
+  document.getElementById("xTBL").appendChild(xtbl);
+
+}
+
+function create_tbl_elem(my_id) {
+  if (document.contains(document.getElementById(my_id))) {
+    document.getElementById(my_id).remove();
+  } 
+
+  var tbl = document.createElement('table');
+  tbl.setAttribute('id', my_id);
+  tbl.style.width  = '100%';
+  tbl.style.border = '1px solid black';
+  
+  return tbl;
+}
+
+function yawFunction() {
+  yawValue = document.getElementById("yawRange").value;
+  document.getElementById("yaw").innerHTML = "Yaw: " + yawValue;
+  tableCreate(); // re-create the tables when the slider changes
+}
+
+// create the table when the webpage loads
+tableCreate();
+
+</script> 
+
+</body>
+</html>
+
