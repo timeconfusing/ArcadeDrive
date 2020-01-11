@@ -44,45 +44,91 @@ body {
 </head>
 <body>
 
-<h1>Arcade X-Drive Equations </h1>
-<p>These equations are for Left Drive is normal and Right Drive is reversed<br>
-mVSpeed is the vertial vector component due to left y-axis Speed <br>
-mHSpeed is the horizontal vector component due to left x-axis Speed <br>
-mYaw is the Left (and -Right) forward vector component due to right x-axis Yaw <br>
-Where 127 is the input range magnitude and the motor range magnitude </p>
-<p>m1VSpeed = VSpeed   - (VSpeed*ABS(HSpeed)/127)/2<br>
-mVSpeed  = m1VSpeed - (m1VSpeed*ABS(Yaw)/127)/2</p>
-<p>m1HSpeed = HSpeed   - (HSpeed*ABS(VSpeed)/127)/2<br>
-mHSpeed  = m1HSpeed - (m1HSpeed*ABS(Yaw)/127)/2</p>
-<p>m1Yaw    = Yaw      - (Yaw*ABS(VSpeed)/127)/2 <br>
-mYaw     = m1Yaw    - (m1Yaw*ABS(HSpeed)/127)/2</p>
-<p>LF = mVSpeed + mHSpeed + mYaw</p>
-<p>LR = mVSpeed - mHSpeed + mYaw</p>
-<p>RF = mVSpeed - mHspeed - mYaw</p>
-<p>RR = mVSpeed + mHSpeed - mYaw</p>
-
+<h1>Holonomic Arcade X-Drive Equations</h1>
+  <p>These equations are for Left Drive is normal and Right Drive is reversed<br>
+     mVSpeed is the vertial vector component due to left joy y-axis Speed <br>
+     mHSpeed is the horizontal vector component due to left joy x-axis Speed <br>
+     mYaw is the Left (and -Right) forward vector component due to right joy x-axis Yaw <br>
+     Where Range=127 is the input (joy) range magnitude and the motor range magnitude </td>
+  </p>
+<table style="width:100%">
+  <tr>
+    <th>Successive Component Scaling Equations<br>
+    <a href="http://www.robotc.net/forums/viewtopic.php?p=5472#p5472">Extrapolated from Arcade function</a></th>
+    <th>Direct Output Scaling Equations<br>
+    <a href="https://www.vexforum.com/t/omni-directional-motion/22139/14?u">Sourced from this VEX thread</a></th>
+  </tr>
+  <tr>
+    <td>m1VSpeed = VSpeed - (VSpeed*ABS(HSpeed)/Range)/2<br>
+        mVSpeed = m1VSpeed - (m1VSpeed*ABS(Yaw)/Range)/2</td>
+    <td>LFus = VSpeed + HSpeed + Yaw (where us means unscaled)<br>
+        LRus = VSpeed - HSpeed + Yaw</td>
+  </tr>
+  <tr>
+    <td>m1HSpeed = HSpeed - (HSpeed*ABS(VSpeed)/Range)/2<br>
+        mHSpeed = m1HSpeed - (m1HSpeed*ABS(Yaw)/Range)/2</td>
+    <td>RFus = VSpeed - HSpeed - Yaw<br>
+        RRus = VSpeed + HSpeed - Yaw</td>
+  </tr>
+  <tr>
+    <td>m1Yaw = Yaw - (Yaw*ABS(VSpeed)/Range)/2<br>
+        mYaw = m1Yaw - (m1Yaw*ABS(HSpeed)/Range)/2</td>
+    <td>arr = {ABS(LFus), ABS(LRus), ABS(RFus), ABS(RRus), Range}<br>
+        max = MAX_ELEMENT(begin(arr),end(arr))</td>
+  </tr>
+  <tr>
+    <td>LF = mVSpeed + mHSpeed + mYaw</td>
+    <td>LF = Range * LFus / max</td>
+  </tr>
+  <tr>
+    <td>LR = mVSpeed - mHSpeed + mYaw</td>
+    <td>LR = Range * LRus / max</td>
+  </tr>
+  <tr>
+    <td>RF = mVSpeed - mHspeed - mYaw</td>
+    <td>RF = Range * RFus / max</td>
+  </tr>
+  <tr>
+    <td>RR = mVSpeed + mHSpeed - mYaw</td>
+    <td>RR = Range * RRus / max</td>
+  </tr>
+</table>
 
 <div id="myTable">
   <h1>mVertical Values</h1>
   <div id=vTBL></div>
   <h1>mHorizontal Values</h1>
   <div id=hTBL></div>
-  <h1>LF | RF Drive Values<br>LR | RR</h1>
+  <h1>Successive Component Scaling X-Drive<br>LF | RF Drive Values<br>LR | RR</h1>
   <div>
-    <h1>Yaw Range Slider</h1>
+    <h2>Yaw Range Slider</h2>
     <p>Drag the slider set the current value of Yaw.</p>
     <div class="slidecontainer">
-      <input type="range" min="-127" max="127" value="0" class="slider" id="yawRange" oninput="yawFunction()">
+      <input type="range" min=-127 max=127 value=0 class="slider" id="yawRange" oninput="yawFunction()">
       <p id="yaw"></p>
     </div>
   </div>
   <div id=xTBL></div>
+
+  <h1>Direct Output Scaling X-Drive<br> LF | RF Drive Values<br>LR | RR</h1>
+  <div>
+    <h2>Yaw Range Slider</h2>
+    <p>Drag the slider set the current value of Yaw.</p>
+    <div class="slidecontainer">
+      <input type="range" min=-127 max=127 value=0 class="slider" id="yawRangeRM" oninput="yawFunctionRM()">
+      <p id="yawRM"></p>
+    </div>
+  </div>
+  <div id=xTBLRM></div>
 </div>
 
 <script type="text/javascript"> 
 
-var yawValue = document.getElementById("yawRange").value;
+var yawValue = Number(document.getElementById("yawRange").value);
 document.getElementById("yaw").innerHTML = "Yaw: " + yawValue;
+
+var yawValueRM = Number(document.getElementById("yawRangeRM").value);
+document.getElementById("yawRM").innerHTML = "Yaw: " + yawValueRM;
 
 function mRatio(v1, v2, v3, Range) {
   var m = v1 - (Math.round(v1*Math.abs(v2)/Range)/2);
@@ -224,13 +270,137 @@ function create_tbl_elem(my_id) {
 }
 
 function yawFunction() {
-  yawValue = document.getElementById("yawRange").value;
+  yawValue = Number(document.getElementById("yawRange").value);
   document.getElementById("yaw").innerHTML = "Yaw: " + yawValue;
   tableCreate(); // re-create the tables when the slider changes
+
+  if (yawValue != yawValueRM) {
+    document.getElementById("yawRangeRM").value = yawValue;
+    yawFunctionRM();
+  }
 }
 
 // create the table when the webpage loads
 tableCreate();
+
+function calc_xdrive(VSpeed, HSpeed, Yaw, Range) {
+  var lfus = VSpeed + HSpeed + Yaw;
+  var lrus = VSpeed - HSpeed + Yaw;
+  var rfus = VSpeed - HSpeed - Yaw;
+  var rrus = VSpeed + HSpeed - Yaw;
+  var my_max = Math.max(Math.abs(lfus),Math.abs(lrus),Math.abs(rfus),Math.abs(rrus),Range);
+
+  var lf = Math.round(Range * lfus / my_max);
+  var lr = Math.round(Range * lrus / my_max);
+  var rf = Math.round(Range * rfus / my_max);
+  var rr = Math.round(Range * rrus / my_max);
+
+  var obj = {
+    lf: lf,
+    lr: lr,
+    rf: rf,
+    rr: rr
+  };
+
+  return obj;
+}
+
+// RobotMesh X-Drive
+function tableCreateRM(){
+  // create arrays with motor values
+  // this could be more efficient if the v&h arrays were only calculated once and not every time the yaw slider changes
+  var hRange = new Array(null,-127,-112,-96,-80,-64,-48,-32,-16,0, 16, 32, 48, 64, 80, 96, 112, 127);  // cols
+  var vRange = new Array(null, 127, 112, 96, 80, 64, 48, 32, 16,0,-16,-32,-48,-64,-80,-96,-112,-127);  // rows
+  var lfArray = new Array();
+  var lrArray = new Array();
+  var rfArray = new Array();
+  var rrArray = new Array();
+
+  var xdrive = calc_xdrive(0,1,2,3);
+
+  for (var i=0; i <= hRange.length-1; i++) {  // row
+    lfArray[i] = new Array();
+    lrArray[i] = new Array();
+    rfArray[i] = new Array();
+    rrArray[i] = new Array();
+    for (var j=0; j <= vRange.length-1; j++) {  // col
+      if (i==0) {
+        lfArray[i][j] = hRange[j];
+        lrArray[i][j] = hRange[j];
+        rfArray[i][j] = hRange[j];
+        rrArray[i][j] = hRange[j];
+      } else if (j==0) {
+        lfArray[i][j] = vRange[i];
+        lrArray[i][j] = vRange[i];
+        rfArray[i][j] = vRange[i];
+        rrArray[i][j] = vRange[i];
+      } else {
+        xdrive = calc_xdrive(vRange[i],hRange[j],yawValueRM,vRange[1]);
+        lfArray[i][j] = xdrive.lf;
+        lrArray[i][j] = xdrive.lr;
+        rfArray[i][j] = xdrive.rf;
+        rrArray[i][j] = xdrive.rr;
+      } //if
+    } //forj
+  } //fori
+
+//  var bwid = document.body.clientWidth();
+//  var cwid = bwid/hRange.length;
+  
+  // this could be more efficient if the v&h tables were only generated once and not every time the yaw slider changes
+  xtbl = create_tbl_elem("XTBLRM");
+
+  for(var i = 0; i <= hRange.length-1; i++) {
+    var xtr = xtbl.insertRow();
+    for(var j = 0; j <= vRange.length-1; j++){
+      var xtd = xtr.insertCell();
+      xtd.style.textAlign = "center"; 
+      xtd.style.border = '2px solid black';
+      if (i==0) {
+        xtd.appendChild(document.createTextNode(vRange[j]));
+      } else if (j==0) {
+        xtd.appendChild(document.createTextNode(hRange[i]));
+      } else {
+        // inner 2x2 table
+        var itbl = document.createElement('table');
+        var itr = itbl.insertRow();
+        var itd = itr.insertCell();
+        itd.style.textAlign = "right"; 
+        itd.appendChild(document.createTextNode( lfArray[i][j] ));
+        itd = itr.insertCell();
+        itd.style.textAlign = "right"; 
+        itd.appendChild(document.createTextNode( rfArray[i][j] ));
+        itr = itbl.insertRow();
+        itd = itr.insertCell();
+        itd.style.textAlign = "right"; 
+        itd.appendChild(document.createTextNode( lrArray[i][j] ));
+        itd = itr.insertCell();
+        itd.style.textAlign = "right"; 
+        itd.appendChild(document.createTextNode( rrArray[i][j] ));
+        xtd.appendChild(itbl);
+
+        xtd.style.border = '1px solid black';
+      }
+    }
+  }
+
+  document.getElementById("xTBLRM").appendChild(xtbl);
+
+}
+
+function yawFunctionRM() {
+  yawValueRM = Number(document.getElementById("yawRangeRM").value);
+  document.getElementById("yawRM").innerHTML = "Yaw: " + yawValueRM;
+  tableCreateRM(); // re-create the tables when the slider changes
+
+  if (yawValue != yawValueRM) {
+    document.getElementById("yawRange").value = yawValueRM;
+    yawFunction();
+  }
+}
+
+// create the table when the webpage loads
+tableCreateRM();
 
 </script> 
 
